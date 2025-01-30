@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Backspace
@@ -40,9 +39,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -91,7 +88,6 @@ private fun GameContent(
     guess: (String) -> Unit = {},
     goBackToMain: () -> Unit = {}
 ) {
-    val screenWith = LocalConfiguration.current.screenWidthDp.dp
     var isLoading by remember { mutableStateOf(true) }
     Scaffold(
         topBar = {
@@ -315,146 +311,39 @@ private fun GameContent(
                                         }
                                     }
                                 }
-
-                                val words = listOf(
-                                    "qwertyuıopğü".toCharArray(),
-                                    "asdfghjklşi".toCharArray(),
-                                    "zxcvbnmöç".toCharArray()
-                                )
-                                Column(
-                                    modifier = Modifier.padding(bottom = 5.dp),
-                                    verticalArrangement = Arrangement.spacedBy(5.dp)
-                                ) {
-                                    Row(
-                                        Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                            modifier = Modifier.padding(start = 5.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Outlined.Timer,
-                                                contentDescription = "$timer seconds left"
-                                            )
-                                            Text(
-                                                timer.toString(),
-                                                style = MaterialTheme.typography.headlineLargeEmphasized
-                                            )
-                                        }
-
-                                        if (myTurn) {
-                                            Text(
-                                                text = stringResource(R.string.your_turn)
+                                Keyboard(
+                                    input = input,
+                                    guess = {
+                                        guess(it)
+                                        input = ""
+                                    },
+                                    myTurn = myTurn,
+                                    timer = timer,
+                                    winner = winner,
+                                    missingChars = missingChars,
+                                    onCharClick = {
+                                        input = replaceCharAtIndex(
+                                            str = input,
+                                            index = currentIndex % 6,
+                                            newChar = it
+                                        )
+                                    },
+                                    onBackSpaceClick = {
+                                        input = if (input.length != 6) {
+                                            replaceCharAtIndex(
+                                                str = input,
+                                                index = input.length - 1,
+                                                newChar = null
                                             )
                                         } else {
-                                            Text(
-                                                text = stringResource(R.string.opponent_turn)
-                                            )
-                                        }
-                                        val enable =
-                                            myTurn && winner == null && input.length == 6 && timer != -1
-                                        FilledIconButton(
-                                            enabled = enable,
-                                            modifier = Modifier
-                                                .padding(5.dp),
-                                            onClick = {
-                                                guess(input)
-                                                input = ""
-                                            }
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Rounded.Check,
-                                                contentDescription = "send"
+                                            replaceCharAtIndex(
+                                                str = input,
+                                                index = 5,
+                                                newChar = null
                                             )
                                         }
                                     }
-                                    words.forEachIndexed { index, charArray ->
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(
-                                                screenWith / 180f,
-                                                Alignment.CenterHorizontally
-                                            ),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            charArray.forEach { char ->
-                                                val containerColor =
-                                                    if (missingChars.contains(char)) {
-                                                        Color.Gray
-                                                    } else Color.Unspecified
-                                                Card(
-                                                    colors = CardDefaults.cardColors(
-                                                        containerColor = containerColor
-                                                    ),
-                                                    modifier = Modifier
-                                                        .size(
-                                                            width = screenWith / 13f,
-                                                            height = 55.dp
-                                                        )
-                                                        .clip(CardDefaults.shape)
-                                                        .clickable {
-                                                            input = replaceCharAtIndex(
-                                                                str = input,
-                                                                index = currentIndex % 6,
-                                                                newChar = char
-                                                            )
-                                                        }) {
-                                                    Box(
-                                                        Modifier.fillMaxSize(),
-                                                        contentAlignment = Alignment.Center
-                                                    ) {
-                                                        Text(
-                                                            char.toString().uppercase(),
-                                                            style = MaterialTheme.typography.bodyLarge
-                                                        )
-                                                    }
-
-                                                }
-
-                                            }
-                                            if (index == 2) {
-                                                Card(
-                                                    modifier = Modifier
-                                                        .padding(start = 5.dp)
-                                                        .clip(CardDefaults.shape)
-                                                        .clickable {
-                                                            input = if (input.length != 6) {
-                                                                replaceCharAtIndex(
-                                                                    str = input,
-                                                                    index = input.length - 1,
-                                                                    newChar = null
-                                                                )
-                                                            } else {
-                                                                replaceCharAtIndex(
-                                                                    str = input,
-                                                                    index = 5,
-                                                                    newChar = null
-                                                                )
-                                                            }
-                                                        },
-                                                    colors = CardDefaults.cardColors(
-                                                        containerColor = MaterialTheme.colorScheme.errorContainer
-                                                    )
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.AutoMirrored.Rounded.Backspace,
-                                                        contentDescription = "",
-                                                        modifier = Modifier
-                                                            .padding(9.dp)
-                                                            .size(IconButtonDefaults.xSmallIconSize),
-                                                        tint = MaterialTheme.colorScheme.onErrorContainer
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-
+                                )
                             }
 
                         }
@@ -522,6 +411,141 @@ private fun GameContent(
                 }
 
                 else -> {}
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun Keyboard(
+    input: String,
+    guess: (String) -> Unit,
+    myTurn: Boolean = true,
+    timer: Int,
+    onCharClick: (Char) -> Unit,
+    onBackSpaceClick: () -> Unit,
+    winner: Int?,
+    missingChars: List<Char>
+) {
+    val screenWith = LocalConfiguration.current.screenWidthDp.dp
+    val words = listOf(
+        "qwertyuıopğü".toCharArray(),
+        "asdfghjklşi".toCharArray(),
+        "zxcvbnmöç".toCharArray()
+    )
+    Column(
+        modifier = Modifier.padding(bottom = 5.dp),
+        verticalArrangement = Arrangement.spacedBy(5.dp)
+    ) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(start = 5.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Timer,
+                    contentDescription = "$timer seconds left"
+                )
+                Text(
+                    timer.toString(),
+                    style = MaterialTheme.typography.headlineLarge
+                )
+            }
+
+            if (myTurn) {
+                Text(
+                    text = stringResource(R.string.your_turn)
+                )
+            } else {
+                Text(
+                    text = stringResource(R.string.opponent_turn)
+                )
+            }
+            val enable =
+                myTurn && winner == null && input.length == 6 && timer != -1
+            FilledIconButton(
+                enabled = enable,
+                modifier = Modifier
+                    .padding(5.dp),
+                onClick = {
+                    guess(input)
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Check,
+                    contentDescription = "send"
+                )
+            }
+        }
+        words.forEachIndexed { index, charArray ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(
+                    screenWith / 180f,
+                    Alignment.CenterHorizontally
+                ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                charArray.forEach { char ->
+                    val containerColor =
+                        if (missingChars.contains(char)) {
+                            Color.Gray
+                        } else Color.Unspecified
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = containerColor
+                        ),
+                        modifier = Modifier
+                            .size(
+                                width = screenWith / 13f,
+                                height = 55.dp
+                            )
+                            .clip(CardDefaults.shape)
+                            .clickable {
+                                onCharClick(char)
+                            }) {
+                        Box(
+                            Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                char.toString().uppercase(),
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+
+                    }
+
+                }
+                if (index == 2) {
+                    Card(
+                        modifier = Modifier
+                            .padding(start = 5.dp)
+                            .clip(CardDefaults.shape)
+                            .clickable {
+                                onBackSpaceClick()
+                            },
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.Backspace,
+                            contentDescription = "",
+                            modifier = Modifier
+                                .padding(9.dp)
+                                .size(IconButtonDefaults.xSmallIconSize),
+                            tint = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
             }
         }
     }
